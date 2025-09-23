@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { userApi } from "../api/axios";
 import { User } from "../Types/type";
+import { useToast } from "./ToastContainer";
 import {
   FaArrowLeft,
   FaUser,
@@ -17,6 +18,7 @@ import { MdOutlineCalendarToday, MdPerson } from "react-icons/md";
 export default function ProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +53,7 @@ export default function ProfilePage() {
       } catch (err) {
         console.error("Failed to fetch user:", err);
         setError("Failed to fetch user data");
+        showToast("Failed to fetch user data", "error");
       } finally {
         setLoading(false);
       }
@@ -67,14 +70,14 @@ export default function ProfilePage() {
     const response = await userApi.deleteUser(user._id); // Make sure userApi.deleteUser sends DELETE to `/users/${id}`
 
     if (response.status === 200 || response.status === 204) {
-      alert("User deleted successfully");
+      showToast(`User ${user.name} ${user.lastName} deleted successfully!`, "success");
       navigate("/"); // redirect after deletion
     } else {
       throw new Error("Failed to delete user");
     }
   } catch (err) {
     console.error("Failed to delete user:", err);
-    alert("Failed to delete user");
+    showToast("Failed to delete user", "error");
   }
 };
 
@@ -92,10 +95,11 @@ export default function ProfilePage() {
       await userApi.updateUser(user._id, updatedUser);
       setUser({ ...user, ...updatedUser });
       setEditCategory(getCategory(Number(editAge)));
+      showToast(`User ${updatedUser.name} ${updatedUser.lastName} updated successfully!`, "success");
       setIsEditing(false);
     } catch (err) {
       console.error("Failed to update user:", err);
-      alert("Failed to update user");
+      showToast("Failed to update user", "error");
     }
   };
 

@@ -2,11 +2,14 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
+import "./components/Toast.css";
 import App from "./App"; 
 import Profile from "./components/ProfilePage";
 import RegisterForm from "./components/form/RegisterForm";
 import LoginForm from "./components/form/LoginForm";
 import UserTable from "./components/UserTable";
+import { ToastProvider } from "./components/ToastContainer";
+
 const router = createBrowserRouter([
   {
     path: "/", 
@@ -36,6 +39,8 @@ const router = createBrowserRouter([
 // Mount router
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <ToastProvider>
+      <RouterProvider router={router} />
+    </ToastProvider>
   </StrictMode>
 );
