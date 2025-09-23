@@ -44,9 +44,9 @@ function AddUserForm({ onAdd, onCancel }: AddUserFormProps) {
         age: ageNum,
       });
 
-      if (response?.data) {
+      if (response?.data?.user) {
         // Pass the user data to parent component
-        onAdd(response.data);
+        onAdd(response.data.user);
         // Reset form
         setFormData({ name: "", lastName: "", age: "" });
         // Note: Don't call onCancel here, let the parent handle closing the form

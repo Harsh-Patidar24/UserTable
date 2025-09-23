@@ -90,13 +90,11 @@ export default function UserTable() {
 
   const handleAdd = useCallback(async (userData: User) => {
   try {
-    // Update the UI optimistically
+    // Add the new user to the state
     setUsers(prev => [...prev, userData]);
     setShowAddForm(false);
   } catch (err) {
     console.error("Failed to add user:", err);
-    // Revert the optimistic update if needed
-    setUsers(prev => prev.filter(u => u._id !== userData._id));
     setError("Failed to add user");
   }
 }, []);
