@@ -7,6 +7,7 @@ import { CgAddR } from "react-icons/cg";
 import { useNavigate } from "react-router-dom";
 import { Counts, User } from "../Types/type";
 import { userApi } from "../api/axios";
+import { useToast } from "./ToastContainer";
 
 // Theme Toggle Icons
 const SunIcon = () => (
@@ -23,6 +24,7 @@ const MoonIcon = () => (
 
 export default function UserTable() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,6 +44,7 @@ export default function UserTable() {
       } catch (err) {
         console.error("Failed to fetch users:", err);
         // Backend server not available, using mock data as fallback
+        showToast("Backend server not available, using sample data", "info");
         console.log("Backend server not running at http://localhost:4000, using mock data");
         try {
           const mockUsers: User[] = [
@@ -56,6 +59,7 @@ export default function UserTable() {
         } catch (mockError) {
           console.error("Failed to load mock data:", mockError);
           setError("Failed to load user data");
+          showToast("Failed to load user data", "error");
         }
       } finally {
         setLoading(false);

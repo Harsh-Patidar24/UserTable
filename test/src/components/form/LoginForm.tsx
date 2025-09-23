@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import api from '../../api/axios'
 import { useNavigate } from "react-router";
+import { useToast } from "../ToastContainer";
 
 export default function LoginForm() {
+  const { showToast } = useToast();
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [message, setMessage] = useState<string>("");
@@ -16,10 +18,15 @@ export default function LoginForm() {
       const response = await api.post('/auth/login', { email, password });
       setMessage(response.data.msg);
       if (response.data.msg === "User login Sucessfully") {
+        showToast("Login successful! Welcome back.", "success");
         navigate("/users");
+      } else {
+        showToast(response.data.msg, "info");
       }
     } catch (err: any) {
-      setMessage(err.response?.data || "Login Failed");
+      const errorMsg = err.response?.data || "Login Failed";
+      setMessage(errorMsg);
+      showToast(errorMsg, "error");
     }
   };
 

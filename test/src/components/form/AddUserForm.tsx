@@ -2,6 +2,7 @@
 import React, { useState, memo } from "react";
 import { userApi } from "../../api/axios";
 import { User } from "../../Types/type";
+import { useToast } from "../ToastContainer";
 
 type AddUserFormProps = {
   onAdd: (user: User) => void;
@@ -9,6 +10,7 @@ type AddUserFormProps = {
 };
 
 function AddUserForm({ onAdd, onCancel }: AddUserFormProps) {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     lastName: "",
@@ -33,6 +35,7 @@ function AddUserForm({ onAdd, onCancel }: AddUserFormProps) {
     const ageNum = Number(formData.age);
     if (!Number.isInteger(ageNum) || ageNum < 0) {
       setError("Enter a valid non-negative age");
+      showToast("Please enter a valid non-negative age", "error");
       setIsSubmitting(false);
       return;
     }
@@ -47,6 +50,7 @@ function AddUserForm({ onAdd, onCancel }: AddUserFormProps) {
       if (response?.data?.user) {
         // Pass the user data to parent component
         onAdd(response.data.user);
+        showToast(`User ${response.data.user.name} ${response.data.user.lastName} created successfully!`, "success");
         // Reset form
         setFormData({ name: "", lastName: "", age: "" });
         // Note: Don't call onCancel here, let the parent handle closing the form
@@ -59,6 +63,7 @@ function AddUserForm({ onAdd, onCancel }: AddUserFormProps) {
                           err.message || 
                           "Failed to create user";
       setError(errorMessage);
+      showToast(errorMessage, "error");
       console.error("Error creating user:", err);
     } finally {
       setIsSubmitting(false);

@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import api from '../../api/axios';
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../ToastContainer";
 
 export default function RegisterForm() {
+  const { showToast } = useToast();
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [message, setMessage] = useState<string>("");
@@ -14,10 +16,15 @@ export default function RegisterForm() {
       const response = await api.post('/auth/register', { email, password });
       setMessage(response.data.msg);
       if (response.data.msg === "User Regiastered Sucessfully") {
+        showToast("Registration successful! Please login to continue.", "success");
         navigate("/login");
+      } else {
+        showToast(response.data.msg, "info");
       }
     } catch (err: any) {
-      setMessage(err.response?.data || "Registration failed");
+      const errorMsg = err.response?.data || "Registration failed";
+      setMessage(errorMsg);
+      showToast(errorMsg, "error");
     }
   };
 
