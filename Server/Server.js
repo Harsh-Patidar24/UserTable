@@ -12,7 +12,7 @@ Connection();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://user-table-ozgw.vercel.app",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
