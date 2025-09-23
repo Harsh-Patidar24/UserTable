@@ -27,7 +27,6 @@ export default function UserTable() {
   const { showToast } = useToast();
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,16 +102,29 @@ export default function UserTable() {
   }
 }, []);
 
-  // Search
-  const handleSearch = useCallback(() => {
-    setSearchTerm(searchInput);
+  // Real-time search with debouncing
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchInput);
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [searchInput]);
+
+  // Clear search when adding form is open
+  useEffect(() => {
+    if (showAddForm) {
+      setSearchInput("");
+    }
+  }, [showAddForm]);
 
   // Filtered users with safer checks
   const filteredUsers = useMemo(() => {
-    if (!searchTerm.trim()) return users;
+    if (!debouncedSearchTerm.trim()) return users;
 
-    const searchLower = searchTerm.toLowerCase();
+    const searchLower = debouncedSearchTerm.toLowerCase();
 
     return users.filter((u) => {
       const firstName = typeof u.name === "string" ? u.name.toLowerCase() : "";
@@ -122,7 +134,7 @@ export default function UserTable() {
         firstName.startsWith(searchLower) || lastName.startsWith(searchLower)
       );
     });
-  }, [users, searchTerm]);
+  }, [users, debouncedSearchTerm]);
 
   // Count statistics
   const counts: Counts = useMemo(() => {
@@ -150,8 +162,12 @@ export default function UserTable() {
         onClick={toggleTheme}
         aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
       >
-        {isDarkMode ? <SunIcon /> : <MoonIcon />}
-        {isDarkMode ? "Light" : "Dark"}
+        <span className="theme-toggle-icon">
+          {isDarkMode ? <SunIcon /> : <MoonIcon />}
+        </span>
+        <span className="theme-toggle-text">
+          {isDarkMode ? "Light" : "Dark"}
+        </span>
       </button>
 
       <div className="header-row">
@@ -159,7 +175,7 @@ export default function UserTable() {
         <button
           className="add-btn"
           onClick={() => setShowAddForm((s) => !s)}
-          disabled={searchInput.trim() !== ""}
+          title={showAddForm ? "Cancel adding user" : "Add new user"}
         >
           <CgAddR />
         </button>
@@ -169,7 +185,104 @@ export default function UserTable() {
         <AddUserForm onAdd={handleAdd} onCancel={() => setShowAddForm(false)} />
       )}
 
-      <div className="search-container">
+      {!showAddForm && (
+        <div className="search-container">
+          <div className="search-input-wrapper">
+            <input
+              type="search"
+              className="search-bar"
+              placeholder="Search by first name or last name..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+            {searchInput && (
+              <button
+                className="clear-search-btn"
+                onClick={() => setSearchInput("")}
+                title="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          {debouncedSearchTerm && (
+            <div className="search-results-info">
+              Found {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} 
+              {debouncedSearchTerm && ` matching "${debouncedSearchTerm}"`}
+            </div>
+          )}
+        </div>
+      )}
+
+      {showAddForm && (
+        <div className="form-active-notice">
+          <span>🔒 Search is disabled while adding a new user</span>
+        </div>
+      )}
+
+      <table className="table">
+        <thead>
+          <tr>
+            <th>S.No.</th>
+            <th>Name</th>
+            <th>Age</th>
+            <th>Category</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredUsers.length > 0 ? (
+            filteredUsers.map((user, index) => (
+              <UserRow
+                key={user._id ? `${user._id}-${index}` : `user-${index}`}
+                user={user}
+                index={index}
+                onSelect={() => handleAction(user._id)}
+              />
+            ))
+          ) : (
+            <tr>
+              <td colSpan={4} className="no-results">
+                {debouncedSearchTerm ? (
+                  <>
+                    <span className="no-results-icon">🔍</span>
+                    <span>No users found matching "{debouncedSearchTerm}"</span>
+                    <button 
+                      className="clear-search-link"
+                      onClick={() => setSearchInput("")}
+                    >
+                      Clear search
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="no-results-icon">👥</span>
+                    <span>No users available</span>
+                  </>
+                )}
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      <div className="summary">
+        <h4>Statistics</h4>
+        <p>
+          <span>Child</span>
+          <span>{childCount}</span>
+        </p>
+        <p>
+          <span>Adult</span>
+          <span>{youngCount}</span>
+        </p>
+        <p>
+          <span>Elderly</span>
+          <span>{oldCount}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
         <input
           type="search"
           className="search-bar"
