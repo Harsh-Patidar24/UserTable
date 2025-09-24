@@ -12,8 +12,12 @@ import {
   FaTimes,
   FaTrash,
   FaUserCircle,
+  FaSun,
+  FaMoon,
+  FaSpinner,
 } from "react-icons/fa";
 import { MdOutlineCalendarToday, MdPerson } from "react-icons/md";
+import Category from "./Category";
 
 export default function ProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +31,9 @@ export default function ProfilePage() {
   const [editName, setEditName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [editAge, setEditAge] = useState("");
-  const [editCategory, setEditCategory] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') === 'dark';
+  });
 
   const getCategory = (age: number) => {
     if (age < 18) return "Child";
@@ -35,6 +41,11 @@ export default function ProfilePage() {
     return "Elderly";
   };
 
+  const toggleTheme = () => {
+    const newTheme = isDarkMode ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    setIsDarkMode(!isDarkMode);
+  };
   // Fetch user from backend
   useEffect(() => {
     const fetchUser = async () => {
@@ -49,7 +60,6 @@ export default function ProfilePage() {
         setEditName(userData.name);
         setEditLastName(userData.lastName);
         setEditAge(userData.age.toString());
-        setEditCategory(getCategory(userData.age));
       } catch (err) {
         console.error("Failed to fetch user:", err);
         setError("Failed to fetch user data");
@@ -63,38 +73,50 @@ export default function ProfilePage() {
   }, [id]);
 
   const handleDelete = async () => {
-  if (!user?._id) return;
+    if (!user?._id) return;
 
-  try {
-    // Call backend delete API
-    const response = await userApi.deleteUser(user._id); // Make sure userApi.deleteUser sends DELETE to `/users/${id}`
-
-    if (response.status === 200 || response.status === 204) {
-      showToast(`User ${user.name} ${user.lastName} deleted successfully!`, "success");
-      navigate("/"); // redirect after deletion
-    } else {
-      throw new Error("Failed to delete user");
+    if (!window.confirm(`Are you sure you want to delete ${user.name} ${user.lastName}?`)) {
+      return;
     }
-  } catch (err) {
-    console.error("Failed to delete user:", err);
-    showToast("Failed to delete user", "error");
-  }
-};
+
+    try {
+      const response = await userApi.deleteUser(user._id);
+
+      if (response.status === 200 || response.status === 204) {
+        showToast(`User ${user.name} ${user.lastName} deleted successfully!`, "success");
+        navigate("/");
+      } else {
+        throw new Error("Failed to delete user");
+      }
+    } catch (err) {
+      console.error("Failed to delete user:", err);
+      showToast("Failed to delete user", "error");
+    }
+  };
 
 
   const handleSave = async () => {
     if (!user?._id) return;
 
+    if (!editName.trim() || !editLastName.trim() || !editAge.trim()) {
+      showToast("Please fill in all fields", "error");
+      return;
+    }
+
+    const ageNum = Number(editAge);
+    if (!Number.isInteger(ageNum) || ageNum < 0) {
+      showToast("Please enter a valid age", "error");
+      return;
+    }
     try {
       const updatedUser = {
         name: editName.trim(),
         lastName: editLastName.trim(),
-        age: Number(editAge),
+        age: ageNum,
       };
 
       await userApi.updateUser(user._id, updatedUser);
       setUser({ ...user, ...updatedUser });
-      setEditCategory(getCategory(Number(editAge)));
       showToast(`User ${updatedUser.name} ${updatedUser.lastName} updated successfully!`, "success");
       setIsEditing(false);
     } catch (err) {
@@ -103,45 +125,210 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className="p-6 text-red-600 font-semibold">{error}</div>;
-  if (!user) return <div className="p-6 text-red-600 font-semibold">User not found</div>;
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditName(user?.name || "");
+    setEditLastName(user?.lastName || "");
+    setEditAge(user?.age.toString() || "");
+  };
+
+  if (loading) {
+    return (
+      <div className="profile-container">
+        <div className="loading-state">
+          <FaSpinner className="loading-spinner" />
+          <p>Loading user profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="profile-container">
+        <div className="error-state">
+          <p className="error-message">{error}</p>
+          <button onClick={() => navigate("/")} className="back-home-btn">
+            <FaArrowLeft /> Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="profile-container">
+        <div className="error-state">
+          <p className="error-message">User not found</p>
+          <button onClick={() => navigate("/")} className="back-home-btn">
+            <FaArrowLeft /> Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="user-profile">
-      <button
-        onClick={() => navigate(-1)}
-        className="back-button absolute top-4 left-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
-      >
-        <FaArrowLeft className="icon" /> Back
+    <div className="profile-container">
+      {/* Theme Toggle */}
+      <button onClick={toggleTheme} className="theme-toggle">
+        <span className="theme-toggle-icon">
+          {isDarkMode ? <FaSun /> : <FaMoon />}
+        </span>
+        <span className="theme-toggle-text">
+          {isDarkMode ? 'Light' : 'Dark'}
+        </span>
       </button>
 
-      <div className="flex flex-col items-center mb-6">
-        <FaUserCircle className="text-gray-400" size={80} />
-        <h2 className="text-2xl font-bold text-gray-800 mt-2">User Profile</h2>
-      </div>
+      {/* Back Button */}
+      <button onClick={() => navigate("/")} className="back-button">
+        <FaArrowLeft className="back-icon" />
+        <span>Back to Users</span>
+      </button>
 
-      {!isEditing ? (
-        <>
-          {/* View Mode */}
-          <div className="user-details">
-            <div className="input-group">
-              <FaUser className="icon" />
-              <input type="text" value={user.name} disabled />
-            </div>
-            <div className="input-group">
-              <FaUser className="icon" />
-              <input type="text" value={user.lastName} disabled />
-            </div>
-            <div className="input-group">
-              <MdOutlineCalendarToday className="icon" />
-              <input type="number" value={user.age} disabled />
-            </div>
-            <div className="input-group">
-              <MdPerson className="icon" />
-              <input type="text" value={editCategory} disabled />
-            </div>
+      {/* Profile Card */}
+      <div className="profile-card">
+        {/* Header */}
+        <div className="profile-header">
+          <div className="profile-avatar">
+            <FaUserCircle className="avatar-icon" />
           </div>
+          <div className="profile-title">
+            <h1>User Profile</h1>
+            <p>Manage user information</p>
+          </div>
+        </div>
+
+        {/* User Details */}
+        <div className="profile-content">
+          {!isEditing ? (
+            <>
+              {/* View Mode */}
+              <div className="user-details">
+                <div className="detail-group">
+                  <label>
+                    <FaUser className="detail-icon" />
+                    First Name
+                  </label>
+                  <div className="detail-value">{user.name}</div>
+                </div>
+
+                <div className="detail-group">
+                  <label>
+                    <FaUser className="detail-icon" />
+                    Last Name
+                  </label>
+                  <div className="detail-value">{user.lastName}</div>
+                </div>
+
+                <div className="detail-group">
+                  <label>
+                    <MdOutlineCalendarToday className="detail-icon" />
+                    Age
+                  </label>
+                  <div className="detail-value">{user.age} years old</div>
+                </div>
+
+                <div className="detail-group">
+                  <label>
+                    <MdPerson className="detail-icon" />
+                    Category
+                  </label>
+                  <div className="detail-value">
+                    <Category age={user.age} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="profile-actions">
+                <button onClick={() => setIsEditing(true)} className="edit-btn">
+                  <FaEdit className="btn-icon" />
+                  Edit Profile
+                </button>
+                <button onClick={handleDelete} className="delete-btn">
+                  <FaTrash className="btn-icon" />
+                  Delete User
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Edit Mode */}
+              <div className="edit-form">
+                <div className="form-group">
+                  <label>
+                    <FaUser className="form-icon" />
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Enter first name"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    <FaUser className="form-icon" />
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editLastName}
+                    onChange={(e) => setEditLastName(e.target.value)}
+                    placeholder="Enter last name"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    <MdOutlineCalendarToday className="form-icon" />
+                    Age
+                  </label>
+                  <input
+                    type="number"
+                    value={editAge}
+                    onChange={(e) => setEditAge(e.target.value)}
+                    placeholder="Enter age"
+                    min="0"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    <MdPerson className="form-icon" />
+                    Category Preview
+                  </label>
+                  <div className="category-preview">
+                    <Category age={Number(editAge) || 0} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Save/Cancel Buttons */}
+              <div className="profile-actions">
+                <button onClick={handleSave} className="save-btn">
+                  <FaSave className="btn-icon" />
+                  Save Changes
+                </button>
+                <button onClick={handleCancel} className="cancel-btn">
+                  <FaTimes className="btn-icon" />
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
           {/* Action Buttons */}
           <div className="button-group">

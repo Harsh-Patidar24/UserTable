@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
 import "./components/Toast.css";
+import "./components/ProfilePage.css";
 import App from "./App"; 
 import Profile from "./components/ProfilePage";
 import RegisterForm from "./components/form/RegisterForm";
