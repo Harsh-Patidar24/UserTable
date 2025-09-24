@@ -1,4 +1,3 @@
-// src/pages/ProfilePage.tsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { userApi } from "../api/axios";
@@ -35,17 +34,12 @@ export default function ProfilePage() {
     return document.documentElement.getAttribute('data-theme') === 'dark';
   });
 
-  const getCategory = (age: number) => {
-    if (age < 18) return "Child";
-    if (age <= 60) return "Adult";
-    return "Elderly";
-  };
-
   const toggleTheme = () => {
     const newTheme = isDarkMode ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
     setIsDarkMode(!isDarkMode);
   };
+
   // Fetch user from backend
   useEffect(() => {
     const fetchUser = async () => {
@@ -70,7 +64,7 @@ export default function ProfilePage() {
     };
 
     fetchUser();
-  }, [id]);
+  }, [id, showToast]);
 
   const handleDelete = async () => {
     if (!user?._id) return;
@@ -80,20 +74,14 @@ export default function ProfilePage() {
     }
 
     try {
-      const response = await userApi.deleteUser(user._id);
-
-      if (response.status === 200 || response.status === 204) {
-        showToast(`User ${user.name} ${user.lastName} deleted successfully!`, "success");
-        navigate("/");
-      } else {
-        throw new Error("Failed to delete user");
-      }
+      await userApi.deleteUser(user._id);
+      showToast(`User ${user.name} ${user.lastName} deleted successfully!`, "success");
+      navigate("/");
     } catch (err) {
       console.error("Failed to delete user:", err);
       showToast("Failed to delete user", "error");
     }
   };
-
 
   const handleSave = async () => {
     if (!user?._id) return;
@@ -108,6 +96,7 @@ export default function ProfilePage() {
       showToast("Please enter a valid age", "error");
       return;
     }
+
     try {
       const updatedUser = {
         name: editName.trim(),
@@ -143,24 +132,11 @@ export default function ProfilePage() {
     );
   }
 
-  if (error) {
+  if (error || !user) {
     return (
       <div className="profile-container">
         <div className="error-state">
-          <p className="error-message">{error}</p>
-          <button onClick={() => navigate("/")} className="back-home-btn">
-            <FaArrowLeft /> Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="profile-container">
-        <div className="error-state">
-          <p className="error-message">User not found</p>
+          <p className="error-message">{error || "User not found"}</p>
           <button onClick={() => navigate("/")} className="back-home-btn">
             <FaArrowLeft /> Back to Home
           </button>
@@ -326,87 +302,6 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-          {/* Action Buttons */}
-          <div className="button-group">
-            <button onClick={() => setIsEditing(true)} className="update-button">
-              <FaEdit className="icon" /> Edit
-            </button>
-            <button onClick={handleDelete} className="delete-button">
-              <FaTrash className="icon" /> Delete
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Edit Mode */}
-          <div className="user-details">
-            <div className="input-group">
-              <FaUser className="icon" />
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                placeholder="Enter Name"
-              />
-            </div>
-            <div className="input-group">
-              <FaUser className="icon" />
-              <input
-                type="text"
-                value={editLastName}
-                onChange={(e) => setEditLastName(e.target.value)}
-                placeholder="Enter Last Name"
-              />
-            </div>
-            <div className="input-group">
-              <MdOutlineCalendarToday className="icon" />
-              <input
-                type="number"
-                value={editAge}
-                onChange={(e) => {
-                  setEditAge(e.target.value);
-                  setEditCategory(getCategory(Number(e.target.value)));
-                }}
-                placeholder="Enter Age"
-              />
-            </div>
-            <div className="input-group">
-              <MdPerson className="icon" />
-              <select
-                value={editCategory}
-                onChange={(e) => setEditCategory(e.target.value)}
-              >
-                <option value="Child">Child</option>
-                <option value="Adult">Adult</option>
-                <option value="Elderly">Elderly</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Save / Cancel Buttons */}
-          <div className="button-group">
-            <button onClick={handleSave} className="update-button">
-              <FaSave className="icon" /> Save
-            </button>
-            <button
-              onClick={() => {
-                setIsEditing(false);
-                setEditName(user.name);
-                setEditLastName(user.lastName);
-                setEditAge(user.age.toString());
-                setEditCategory(getCategory(user.age));
-              }}
-              className="cancel-button"
-            >
-              <FaTimes className="icon" /> Cancel
-            </button>
-          </div>
-        </>
-      )}
     </div>
   );
 }
